@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>News POC — AI & Cybersecurity</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-theme="light">
+
+  <!-- ===== Top Bar ===== -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="app-title">
+        <span>📡</span> NewsWatch
+      </div>
+
+      <nav class="tabs" role="tablist" aria-label="News categories">
+        <button class="tab-btn active" data-tab="ai" role="tab" aria-selected="true">🤖 AI</button>
+        <button class="tab-btn" data-tab="cybersecurity" role="tab" aria-selected="false">🔒 Cybersecurity</button>
+        <button class="tab-btn" data-tab="bookmarks" role="tab" aria-selected="false">🔖 Bookmarks</button>
+        <button class="tab-btn" data-tab="summaries" role="tab" aria-selected="false">💾 Summaries</button>
+      </nav>
+
+      <div class="topbar-actions">
+        <button class="select-toggle-btn" id="select-toggle" title="Select articles for batch AI analysis" aria-label="Toggle select mode">☑ Select</button>
+        <button class="icon-btn" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+        <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Open settings">⚙️</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Settings Overlay ===== -->
+  <div class="settings-overlay" id="settings-overlay" role="dialog" aria-modal="true" aria-label="Settings"></div>
+
+  <!-- ===== Settings Panel ===== -->
+  <aside class="settings-panel" id="settings-panel">
+    <div class="settings-header">
+      <h2>⚙️ Settings</h2>
+      <button class="settings-close" id="settings-close" aria-label="Close settings">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-group">
+        <label for="claude-key-input">Claude API Key</label>
+        <input
+          type="password"
+          id="claude-key-input"
+          placeholder="sk-ant-…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <span class="hint">
+          Used for Summarize &amp; Categorize. Get a key at
+          <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">console.anthropic.com</a>.
+          Stored locally in your browser.
+        </span>
+      </div>
+
+      <div class="settings-group">
+        <label for="news-window-select">News window</label>
+        <select id="news-window-select">
+          <option value="1" selected>Last 24 hours</option>
+          <option value="3">Last 3 days</option>
+          <option value="7">Last 7 days</option>
+        </select>
+        <span class="hint">Filters RSS articles by publish date. Only articles within this window are shown.</span>
+      </div>
+
+      <div class="settings-group">
+        <label for="refresh-select">Auto-refresh interval</label>
+        <select id="refresh-select">
+          <option value="5">Every 5 minutes</option>
+          <option value="10" selected>Every 10 minutes</option>
+          <option value="30">Every 30 minutes</option>
+        </select>
+      </div>
+
+      <div class="settings-group">
+        <label for="slack-token-input">Slack Bot Token</label>
+        <input
+          type="password"
+          id="slack-token-input"
+          placeholder="xoxb-…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <span class="hint">
+          Bot token from your Slack app (requires <code>chat:write</code> scope).
+          Find it at <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer">api.slack.com/apps</a>
+          → your app → OAuth &amp; Permissions → Bot User OAuth Token.
+        </span>
+      </div>
+
+      <div class="settings-group">
+        <label for="slack-channel-input">Slack Channel</label>
+        <input
+          type="text"
+          id="slack-channel-input"
+          placeholder="ai-news"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <span class="hint">Channel name to post digests to (without #). Make sure your bot is a member of the channel.</span>
+      </div>
+
+      <div class="settings-group">
+        <label for="slack-webhook-input">Slack Webhook URL <span style="font-weight:400;color:var(--text-muted)">(optional fallback)</span></label>
+        <input
+          type="password"
+          id="slack-webhook-input"
+          placeholder="https://hooks.slack.com/services/…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <span class="hint">Used if no Bot Token is set. Create an
+          <a href="https://api.slack.com/messaging/webhooks" target="_blank" rel="noopener noreferrer">Incoming Webhook</a>
+          in your Slack workspace.
+        </span>
+      </div>
+
+      <button class="btn-save" id="save-settings">Save Settings</button>
+    </div>
+  </aside>
+
+  <!-- ===== Main Content ===== -->
+  <main class="main" role="main">
+    <!-- Search Bar -->
+    <div class="search-bar-wrap">
+      <span class="search-icon" aria-hidden="true">🔍</span>
+      <input
+        type="search"
+        id="search-input"
+        placeholder="Search headlines…"
+        aria-label="Search articles"
+        autocomplete="off"
+      />
+    </div>
+
+    <!-- Status + Refresh -->
+    <div class="status-bar">
+      <span class="status-text" id="status-text"></span>
+      <button class="refresh-btn" id="refresh-btn" aria-label="Refresh news">
+        <span class="refresh-icon" id="refresh-icon">↻</span>
+        Refresh
+      </button>
+    </div>
+
+    <!-- Per-source fetch log (shown during and briefly after refresh) -->
+    <div class="fetch-log" id="fetch-log" hidden></div>
+
+    <!-- Label filter bar (shown when articles have labels from categorize) -->
+    <div class="label-filter-bar" id="label-filter-bar" hidden></div>
+
+    <!-- Card Grid -->
+    <div class="card-grid" id="card-grid" role="list" aria-live="polite" aria-label="News articles">
+      <!-- Cards injected by app.js -->
+    </div>
+  </main>
+
+  <!-- ===== Floating Select Bar ===== -->
+  <div class="select-bar" id="select-bar" role="toolbar" aria-label="Selected articles actions">
+    <span class="select-count" id="select-count">0 articles selected</span>
+    <div class="select-bar-actions">
+      <button class="select-bar-btn" id="select-bar-select-all">Select All</button>
+      <button class="select-bar-btn" id="select-bar-summarize">✦ Summarize</button>
+      <button class="select-bar-btn select-bar-btn--accent" id="select-bar-categorize">✦ Categorize &amp; Summarize</button>
+      <button class="select-bar-btn select-bar-btn--ghost" id="select-bar-clear">Clear</button>
+    </div>
+  </div>
+
+  <!-- ===== Toast (dynamically created by app.js) ===== -->
+
+  <!-- ===== Scripts ===== -->
+  <script src="js/utils.js"></script>
+  <script src="js/bookmarks.js"></script>
+  <script src="js/rss.js"></script>
+  <script src="js/saved-summaries.js"></script>
+  <script src="js/summarize.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
