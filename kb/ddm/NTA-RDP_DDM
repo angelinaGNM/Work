@@ -1,0 +1,17 @@
+NTA-RDP	ID
+NTA-RDP	SrcIP
+NTA-RDP	SrcPort
+NTA-RDP	DstIP
+NTA-RDP	DstPort
+NTA-RDP	Cookie
+NTA-RDP	SystemTstamp
+NTA-RDP	System
+NTA-RDP	Action
+NTA-RDP	Status
+NTA-RDP	Result
+NTA-RDP	SecurityProtocol
+NTA-RDP	Client
+NTA-RDP	CertType
+NTA-RDP	CertCount
+NTA-RDP	EncryptionLevel
+NTA-RDP	EncryptionMethod

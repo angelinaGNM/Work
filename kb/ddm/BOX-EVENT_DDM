@@ -1,0 +1,7 @@
+BOX-EVENT	User
+BOX-EVENT	SystemTstamp
+BOX-EVENT	System
+BOX-EVENT	SrcIP
+BOX-EVENT	File
+BOX-EVENT	Visibility
+BOX-EVENT	FileType

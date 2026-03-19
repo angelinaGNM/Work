@@ -1,0 +1,13 @@
+NTA-DNS	SrcIP
+NTA-DNS	SrcPort
+NTA-DNS	DstIP
+NTA-DNS	DstPort
+NTA-DNS	Query
+NTA-DNS	SystemTstamp
+NTA-DNS	System
+NTA-DNS	Action
+NTA-DNS	Status
+NTA-DNS	Result
+NTA-DNS	ResponseCode
+NTA-DNS	QueryType
+NTA-DNS	RecordType

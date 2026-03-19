@@ -1,0 +1,16 @@
+NTA-SNMP	ID
+NTA-SNMP	SrcIP
+NTA-SNMP	SrcPort
+NTA-SNMP	DstIP
+NTA-SNMP	DstPort
+NTA-SNMP	Duration
+NTA-SNMP	GetRequests
+NTA-SNMP	GetBulkRequests
+NTA-SNMP	SystemTstamp
+NTA-SNMP	System
+NTA-SNMP	Action
+NTA-SNMP	Status
+NTA-SNMP	GetResponses
+NTA-SNMP	SetRequests
+NTA-SNMP	DisplayString
+NTA-SNMP	UpTime

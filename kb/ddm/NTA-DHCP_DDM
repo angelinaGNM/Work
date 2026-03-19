@@ -1,0 +1,11 @@
+NTA-DHCP	User
+NTA-DHCP	SrcIP
+NTA-DHCP	SrcPort
+NTA-DHCP	DstIP
+NTA-DHCP	DstPort
+NTA-DHCP	MACAddress
+NTA-DHCP	Status
+NTA-DHCP	SystemTstamp
+NTA-DHCP	System
+NTA-DHCP	Action
+NTA-DHCP	ResultCode

@@ -1,0 +1,16 @@
+NTA-FTP	SrcIP
+NTA-FTP	SrcPort
+NTA-FTP	DstIP
+NTA-FTP	DstPort
+NTA-FTP	User
+NTA-FTP	Password
+NTA-FTP	Status
+NTA-FTP	Action
+NTA-FTP	Command
+NTA-FTP	Args
+NTA-FTP	FileSize
+NTA-FTP	FileID
+NTA-FTP	SystemTstamp
+NTA-FTP	System
+NTA-FTP	ReplyCode
+NTA-FTP	ReplyMsg

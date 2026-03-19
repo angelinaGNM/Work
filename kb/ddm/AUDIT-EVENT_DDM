@@ -1,0 +1,4 @@
+AUDIT-EVENT	User
+AUDIT-EVENT	AuditType
+AUDIT-EVENT	Category
+AUDIT-EVENT	MessageID

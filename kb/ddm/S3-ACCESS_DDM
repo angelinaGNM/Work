@@ -1,0 +1,13 @@
+S3-ACCESS	AccessPointARN
+S3-ACCESS	Bucket
+S3-ACCESS	SrcIP
+S3-ACCESS	Requester
+S3-ACCESS	Operation
+S3-ACCESS	RequestURI
+S3-ACCESS	S3Prefix        
+S3-ACCESS	S3Bucket        
+S3-ACCESS	SystemTstamp
+S3-ACCESS	System
+S3-ACCESS	Status
+S3-ACCESS	TXLen
+S3-ACCESS	UserAgent

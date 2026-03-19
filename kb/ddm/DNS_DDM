@@ -1,0 +1,17 @@
+DNS	Action
+DNS	Status
+DNS	S3Bucket
+DNS	S3Prefix
+DNS	ActionTaken
+DNS	SrcIP
+DNS	Query
+DNS	SystemTstamp
+DNS	App
+DNS	DstIP
+DNS	SrcPort
+DNS	DstPort
+DNS	Category
+DNS	System
+DNS	ResponseCode
+DNS	QueryType
+DNS	RecordType

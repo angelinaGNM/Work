@@ -1,0 +1,14 @@
+SOPHOS	Threat
+SOPHOS	SrcIP
+SOPHOS	DstIP
+SOPHOS	SystemTstamp
+SOPHOS	System
+SOPHOS	CommandLine
+SOPHOS	User
+SOPHOS	File
+SOPHOS	Process
+SOPHOS	URL
+SOPHOS	Hash
+SOPHOS	TargetUser
+SOPHOS	Role
+SOPHOS	Severity

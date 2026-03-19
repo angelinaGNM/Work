@@ -1,0 +1,14 @@
+NTA-SSH	SrcIP
+NTA-SSH	SrcPort
+NTA-SSH	DstIP
+NTA-SSH	SystemTstamp
+NTA-SSH	System
+NTA-SSH	Action
+NTA-SSH	Status
+NTA-SSH	Result 
+NTA-SSH	DstPort
+NTA-SSH	Client
+NTA-SSH	Direction
+NTA-SSH	HostKey
+NTA-SSH	Server
+NTA-SSH	Version

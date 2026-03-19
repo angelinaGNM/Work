@@ -1,0 +1,11 @@
+CALENDAR	CalenderID
+CALENDAR	Action
+CALENDAR	Status
+CALENDAR	Event
+CALENDAR	SystemTstamp
+CALENDAR	App
+CALENDAR	EventType
+CALENDAR	EventName
+CALENDAR	System
+CALENDAR	User
+CALENDAR	Notification

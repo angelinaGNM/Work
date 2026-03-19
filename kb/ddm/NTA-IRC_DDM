@@ -1,0 +1,16 @@
+NTA-IRC	SrcIP
+NTA-IRC	SrcPort
+NTA-IRC	DstIP
+NTA-IRC	DstPort
+NTA-IRC	Nickname
+NTA-IRC	User
+NTA-IRC	Command
+NTA-IRC	Args
+NTA-IRC	DccFile
+NTA-IRC	DccFileSize
+NTA-IRC	SystemTstamp
+NTA-IRC	System
+NTA-IRC	Status
+NTA-IRC	Action
+NTA-IRC	DccMimeType
+NTA-IRC	FileID

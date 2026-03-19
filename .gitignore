@@ -1,0 +1,31 @@
+# Backup
+.bkp/
+
+# Python virtualenv
+b-copilot-env/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment / secrets
+.env
+*.env
+
+# Logs
+*.log
+
+# Node / frontend
+widget/node_modules/
+widget/dist/
+widget/.vite/
+
+# Original reference clones / local-only folders
+og_copilot/
+angie-og-copilot/
+
+# OS
+.DS_Store
+Thumbs.db

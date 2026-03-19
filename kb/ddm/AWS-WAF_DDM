@@ -1,0 +1,8 @@
+AWS-WAF	ActionTaken
+AWS-WAF	SystemTstamp
+AWS-WAF	System
+AWS-WAF	SrcIP
+AWS-WAF	ConditionType
+AWS-WAF	HTTPSourceID
+AWS-WAF	WebACLID
+AWS-WAF	DstIP

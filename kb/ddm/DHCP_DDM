@@ -1,0 +1,8 @@
+DHCP	User
+DHCP	SystemTstamp
+DHCP	System
+DHCP	SrcIP
+DHCP	Action
+DHCP	Status
+DHCP	MACAddress
+DHCP	ResultCode

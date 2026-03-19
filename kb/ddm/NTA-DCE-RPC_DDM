@@ -1,0 +1,12 @@
+NTA-DCE-RPC	SrcIP
+NTA-DCE-RPC	SystemTstamp
+NTA-DCE-RPC	System
+NTA-DCE-RPC	Action
+NTA-DCE-RPC	Status
+NTA-DCE-RPC	SrcPort
+NTA-DCE-RPC	DstIP
+NTA-DCE-RPC	DstPort
+NTA-DCE-RPC	RoundTripTime
+NTA-DCE-RPC	Pipe
+NTA-DCE-RPC	Endpoint
+NTA-DCE-RPC	Operation

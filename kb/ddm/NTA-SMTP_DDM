@@ -1,0 +1,14 @@
+NTA-SMTP	SrcIP
+NTA-SMTP	SrcPort
+NTA-SMTP	DstIP
+NTA-SMTP	DstPort
+NTA-SMTP	Sender
+NTA-SMTP	Recipient
+NTA-SMTP	SystemTstamp
+NTA-SMTP	System
+NTA-SMTP	Action
+NTA-SMTP	Status
+NTA-SMTP	Subject
+NTA-SMTP	UserAgent
+NTA-SMTP	MailFrom
+NTA-SMTP	RcptTo

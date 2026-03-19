@@ -1,0 +1,12 @@
+NTA-SMB	ID
+NTA-SMB	SrcIP
+NTA-SMB	SrcPort
+NTA-SMB	DstIP
+NTA-SMB	SystemTstamp
+NTA-SMB	System
+NTA-SMB	Action
+NTA-SMB	Status
+NTA-SMB	DstPort
+NTA-SMB	Path
+NTA-SMB	ShareType
+NTA-SMB	Name

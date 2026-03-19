@@ -1,0 +1,11 @@
+OKTA	User
+OKTA	SrcIP
+OKTA	AuthProto
+OKTA	TargetUser
+OKTA	Role
+OKTA	Type
+OKTA	Config
+OKTA	SystemTstamp
+OKTA	System
+OKTA	Reason
+OKTA	Result

@@ -1,0 +1,10 @@
+AUDIT	User
+AUDIT	SystemTstamp
+AUDIT	System
+AUDIT	Action
+AUDIT	Status
+AUDIT	SrcIP
+AUDIT	Detail
+AUDIT	ActionTaken
+AUDIT	SourceLabel
+AUDIT	SourceClassification

@@ -1,0 +1,11 @@
+NTA-OCSP	SrcIP
+NTA-OCSP	SrcPort
+NTA-OCSP	DstIP
+NTA-OCSP	DstPort
+NTA-OCSP	FileID
+NTA-OCSP	HashAlgorithm
+NTA-OCSP	HashIssuerName
+NTA-OCSP	HashIssuerKey
+NTA-OCSP	SerialNumber
+NTA-OCSP	RevokeTime
+NTA-OCSP	RevokeReason

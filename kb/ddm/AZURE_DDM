@@ -1,0 +1,10 @@
+AZURE	Category
+AZURE	Action
+AZURE	Status
+AZURE	CallerIPAddress
+AZURE	User
+AZURE	OperationName
+AZURE	SystemTstamp
+AZURE	System
+AZURE	ResourceGroupName
+AZURE	EventName

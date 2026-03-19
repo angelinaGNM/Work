@@ -1,0 +1,10 @@
+PRISMA	AlertStatus
+PRISMA	Reason
+PRISMA	PolicyID
+PRISMA	PolicyType
+PRISMA	User
+PRISMA	ResourceAPI
+PRISMA	CloudService
+PRISMA	URL
+PRISMA	SystemTstamp
+PRISMA	CloudAccountOwner

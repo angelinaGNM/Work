@@ -1,0 +1,12 @@
+NTA-DPD	ID
+NTA-DPD	Status
+NTA-DPD	SystemTstamp
+NTA-DPD	System
+NTA-DPD	Action
+NTA-DPD	SrcIP
+NTA-DPD	SrcPort
+NTA-DPD	DstIP
+NTA-DPD	DstPort
+NTA-DPD	Proto
+NTA-DPD	Analyzer
+NTA-DPD	Reason
