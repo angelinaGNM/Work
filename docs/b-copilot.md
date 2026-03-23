@@ -48,7 +48,9 @@ Copilot must adapt tone and depth based on the user's role — technical for ana
 
 | Skill | Description |
 |---|---|
-| `translate_to_dql` | Natural language → DQL query |
+| `translate_to_dql` | Natural language → DQL query (user-driven) |
+| `explore_logs` | Copilot-driven log browsing — presents raw stream categories, user picks, DQL executes (24h default). See docs/explore_skills.md |
+| `explore_detections` | Copilot-driven detection browsing — presents fired signal categories, user picks, DQL executes (3-day default). See docs/explore_skills.md |
 | `explain_signal` | Explain what an alert/signal means in plain English |
 | `suggest_investigation` | Given a signal, suggest next investigation steps (KB-style) |
 | `suggest_visualization` | Recommend chart type + fields for a DQL query |

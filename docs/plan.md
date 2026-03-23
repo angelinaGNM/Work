@@ -50,9 +50,13 @@ Three major query categories drive the entire skill and graph design:
 
 ### Category 2A — Threat Detections
 
+> **User-driven:** `translate_to_dql` — user knows what they want, copilot translates and executes.
+> **Copilot-driven:** `explore_detections` — user wants to browse; copilot presents options and guides.
+
 | Skill | Description |
 |---|---|
 | `translate_to_dql` | Natural language → DQL → execute → stream results |
+| `explore_detections` | Copilot-driven: present fired detection categories → user picks → DQL executes (3-day default) |
 | `enrich_ioc` | Enrich IPs, domains, hashes with VirusTotal, AbuseIPDB, reputation feeds |
 | `mitre_lookup` | Map detected activity to MITRE ATT&CK tactics and techniques |
 | `cve_lookup` | Enrich CVE IDs found in results with severity, patch status, affected products |
@@ -74,9 +78,12 @@ Three major query categories drive the entire skill and graph design:
 
 ### Category 2B — Operational Queries
 
+> **Copilot-driven:** `explore_logs` — user wants to browse raw streams; copilot presents log categories and guides.
+
 | Skill | Description |
 |---|---|
 | `translate_to_dql` | Reused — operational DQL queries use the same skill |
+| `explore_logs` | Copilot-driven: present raw log categories → user picks → DQL executes (24h default) |
 | `stream_health` | Ingestion rate, parsing success rate, last-seen timestamp per stream |
 | `source_health` | Connectivity status of data sources, last event received, extractor errors |
 | `usage_analytics` | Event volume trends, storage usage, top sources by volume, ingestion lag |
@@ -485,6 +492,7 @@ Voice-specific considerations:
 - [ ] `interrupt()` at enrichment and triage decision points
 - [ ] Dynamic triage routing (user/host/IP conditional edges)
 - [ ] `incident_response` + `executive_summary` nodes
+- [ ] `explore_detections` — choices interrupt → DQL → stream results (see docs/explore_skills.md)
 
 ### Phase 3 — Platform FAQ (navigation + multi-step)
 - [ ] `page_context_advisor` — frontend passes page context in request
@@ -496,7 +504,9 @@ Voice-specific considerations:
 ### Phase 4 — Operational + Analytics
 - [ ] `stream_health`, `source_health`, `usage_analytics`
 - [ ] `field_distribution`, `time_series_analysis`, `compliance_report`
+- [ ] `explore_logs` — choices interrupt → DQL → stream results (see docs/explore_skills.md)
 - [ ] Classifier node that reads query intent + result shape to route correctly
+- [ ] `choices` SSE event type + widget chip rendering (required by both explore skills)
 
 ### Phase 5 — Model + Session
 - [ ] `get_model(tier, provider)` factory
