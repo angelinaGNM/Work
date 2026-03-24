@@ -379,27 +379,76 @@ Because state is checkpointed, the user can:
 
 ## 6. Model Strategy
 
-### Model Tiers
+### Response Modes (User-Facing)
 
-| Tier | Model | Used for |
+Three modes are exposed to the user. **Auto is the default.**
+
+| Mode | What it does | Default model (Anthropic) | Default model (OpenAI) |
+|---|---|---|---|
+| **Auto** | Copilot decides based on query complexity | `claude-sonnet-4-6` | `gpt-4.1` |
+| **Quick** | Lightweight model, fast response, lower cost | `claude-haiku-4-5-20251001` | `gpt-4o-mini` |
+| **Deep** | Powerful reasoning model, thorough, slower | `claude-opus-4-6` | `o3` |
+
+- **Auto** resolves to `standard` tier internally. The intent classifier may upgrade to `deep` for
+  complex queries (see Per-Skill Defaults below) but will never downgrade to `fast` without user
+  selection.
+- **Quick** maps to `fast` tier across all skills, except skills with a hardcoded minimum (see below).
+- **Deep** maps to `deep` tier across all skills.
+
+### Model Tiers (Internal)
+
+| Tier | Anthropic model | OpenAI model | Used for |
+|---|---|---|---|
+| `fast` | `claude-haiku-4-5-20251001` | `gpt-4o-mini` | Guardrail classifier, intent routing, simple FAQ |
+| `standard` | `claude-sonnet-4-6` | `gpt-4.1` | `translate_to_dql`, enrichment, triage, most skills — **Auto default** |
+| `deep` | `claude-opus-4-6` | `o3` | Complex investigation, reasoning-heavy tasks |
+
+### Per-Skill Defaults (hardcoded minimums)
+
+Some skills always use a minimum tier regardless of user mode selection:
+
+| Skill | Minimum tier | Reason |
 |---|---|---|
-| `fast` | `claude-haiku-4-5-20251001` | Guardrail classifier, intent routing, simple FAQ, streaming tokens |
-| `standard` | `claude-sonnet-4-6` | `translate_to_dql`, enrichment, triage nodes, most skills |
-| `deep` | `claude-opus-4-6` | `incident_response`, `executive_summary`, `compliance_report` |
+| `guardrail_check` (Layer 1.5) | `fast` | Speed-critical; always Haiku |
+| `platform_faq` | `fast` | Simple KB lookup — fast is sufficient |
+| `translate_to_dql` | `standard` | DQL accuracy requires Sonnet minimum |
+| `explore_logs` | `standard` | Copilot-generated DQL — same as translate_to_dql |
+| `explore_detections` | `standard` | Same as above |
+| `incident_response` | `deep` | NIST CSF reasoning — always deep |
+| `executive_summary` | `deep` | C-suite output quality — always deep |
+| `compliance_report` | `deep` | Structured reasoning — always deep |
+
+If the user selects Quick but hits a skill with a `standard` minimum, the copilot silently upgrades
+for that skill and notes it in the response (e.g. "Using standard model for DQL accuracy").
 
 ### Per-Node Model Selection
 
-Each node declares its preferred tier. `get_model(tier, provider)` resolves to the right model:
+Each node declares its minimum tier. `get_model(tier, provider)` resolves to the right model,
+respecting both the user's mode and the skill's minimum:
 
 ```python
 def translate_and_execute_node(state):
-    model = get_model(tier=state["model_tier"] or "standard", provider=state["provider"])
-    ...
+    # user may select "quick" but this skill enforces standard minimum
+    tier = max_tier(state["user_mode"], min_tier="standard")
+    model = get_model(tier=tier, provider=state["provider"])
 
 def executive_summary_node(state):
+    # always deep regardless of user mode
     model = get_model(tier="deep", provider=state["provider"])
-    ...
 ```
+
+### Provider Toggle (Anthropic / OpenAI)
+
+User can switch provider per session. Mode + provider together resolve the model:
+
+| User mode | Provider: Anthropic | Provider: OpenAI |
+|---|---|---|
+| Auto | `claude-sonnet-4-6` | `gpt-4.1` |
+| Quick | `claude-haiku-4-5-20251001` | `gpt-4o-mini` |
+| Deep | `claude-opus-4-6` | `o3` |
+
+Provider is stored in `CopilotState.provider`. `get_model()` abstracts SDK differences — skills
+never import Anthropic or OpenAI SDKs directly.
 
 ### Public / Private Toggle
 
@@ -410,15 +459,14 @@ def executive_summary_node(state):
 | Private | Local Ollama | `OLLAMA_BASE_URL`, model name (e.g. `llama3`) |
 | Private | Azure OpenAI | `AZURE_OPENAI_ENDPOINT` + deployment name |
 
-Provider is set per-session (user can switch mid-conversation). The `provider` field in
-`CopilotState` carries the choice into every node. `get_model()` abstracts the SDK differences.
+### User-Facing Mode Switching
 
-### User-Facing Model Switching
+Frontend sends `user_mode` (`auto` / `quick` / `deep`) and `provider` (`anthropic` / `openai`) in
+the chat request. Default: `user_mode=auto`, `provider=anthropic`.
 
-Frontend sends `provider` and `model_tier` in the chat request. Users can toggle:
-- "Quick answer" → `fast` tier
-- "Deep analysis" → `deep` tier
-- "Use private LLM" → `provider=local`
+Users can toggle via the widget:
+- Mode pill: **Auto** / **Quick** / **Deep** (Auto highlighted by default)
+- Provider toggle: **Claude** / **GPT** (Claude by default)
 
 ---
 
@@ -509,11 +557,15 @@ Voice-specific considerations:
 - [ ] `choices` SSE event type + widget chip rendering (required by both explore skills)
 
 ### Phase 5 — Model + Session
-- [ ] `get_model(tier, provider)` factory
-- [ ] Per-node model tier declarations
+- [ ] `get_model(tier, provider)` factory — resolves user mode + skill minimum to final model
+- [ ] `max_tier(user_mode, min_tier)` helper — enforces per-skill minimums
+- [ ] Per-node minimum tier declarations in each skill
+- [ ] `user_mode` + `provider` fields in `CopilotState`
+- [ ] Widget: Auto / Quick / Deep mode pill (Auto default)
+- [ ] Widget: Claude / GPT provider toggle (Claude default)
+- [ ] Inline note in response when mode is silently upgraded for a skill
 - [ ] `PostgresSaver` checkpointer for production
 - [ ] Clear history endpoint
-- [ ] Frontend: model tier toggle, provider toggle
 
 ### Phase 6 — Voice
 - [ ] `input_mode` field in `CopilotState`
