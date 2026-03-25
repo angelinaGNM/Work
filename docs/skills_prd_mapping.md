@@ -112,7 +112,7 @@
 | Playbook Validation | `playbook_builder` | Partial — validation step TBD |
 | Log Source Guidance | `product_guide`, `page_context_advisor` | |
 | Action Execution | `incident_response` | Guidance only — execution not yet in plan |
-| Automated Remediation | — | **Gap — no skill** |
+| Automated Remediation | extends `incident_response`| **Gap — no skill** |
 | Threat Intelligence Mapping | `mitre_lookup`, `enrich_ioc` | |
 | Guided Investigation Workflow | `incident_response`, `page_context_advisor` | |
 
