@@ -1,0 +1,431 @@
+{
+  "Credential Access": {
+    "description": "Attacks targeting credentials — brute force, credential dumping, hash theft",
+    "mitre_tactic": "Credential Access",
+    "default_duration": "3d",
+    "queries": [
+      {
+        "name": "Failed MSSQL Logon Attempt from Public IP",
+        "dql": "stream=authentication where sourcename='MSSQL' and eid='18456' and srctype='PUBLIC' | groupby srcip, system | select srcip, system, count(*) as cnt | having cnt > 5 | duration 10m",
+        "stream": "AUTHENTICATION",
+        "description": "Multiple failed MSSQL logins from public IPs — possible external brute force",
+        "technique": "Brute Force"
+      },
+      {
+        "name": "Failed Login Attempt by User to MSSQL Server",
+        "dql": "stream=authentication where sourcename='MSSQL' and eid='18456' and status='FAILED' | groupby user, system | select user, system, count(*) as cnt | having cnt > 5",
+        "stream": "AUTHENTICATION",
+        "description": "Repeated failed logins by a user to MSSQL — possible credential stuffing",
+        "technique": "Brute Force"
+      },
+      {
+        "name": "Manual Memory Dumping via Proc Filesystem",
+        "dql": "stream=auditd where action in ('USER_COMMAND_EXECUTED', 'PROCESS_EXECUTED') and rlike(lower(process), '(cat|grep|tail|less|more|egrep|fgrep|dd|gcore|strings)') and rlike(lower(commandline), '(/proc/.*?/mem|/proc/.*?/maps|/proc/.*?/smaps)') | groupby user, system",
+        "stream": "AUDITD",
+        "description": "Linux memory dump via /proc — credential extraction from memory",
+        "technique": "OS Credential Dumping"
+      },
+      {
+        "name": "Credential Access via DCE-RPC",
+        "dql": "stream=NTA-DCE-RPC where ((endpoint='drsuapi' and operation='DRSReplicaSync') or (endpoint='drsuapi' and operation='DRSGetNCChanges')) | groupby srcip",
+        "stream": "NTA-DCE-RPC",
+        "description": "DCSync attack — replicating AD credentials over DCE-RPC",
+        "technique": "Exploitation for Credential Access"
+      },
+      {
+        "name": "Possible Impacket SecretDump Remote Activity",
+        "dql": "stream=NTA-SMB where path like '%ADMIN%' and (name like '%SYSTEM32%' or name like 'tmp') | groupby dstip, srcip",
+        "stream": "NTA-SMB",
+        "description": "Impacket SecretDump indicators over SMB — remote credential extraction",
+        "technique": "OS Credential Dumping"
+      }
+    ]
+  },
+
+  "Privilege Escalation": {
+    "description": "Attempts to gain higher access — admin role abuse, UAC bypass, token manipulation",
+    "mitre_tactic": "Privilege Escalation",
+    "default_duration": "3d",
+    "queries": [
+      {
+        "name": "MSSQL User Account Added to Sysadmin Role",
+        "dql": "stream=database where sourcename='MSSQL' and eid='33205' and rlike(lower(query), 'alter server role \\[sysadmin\\] add member') | groupby system",
+        "stream": "DATABASE",
+        "description": "User added to MSSQL sysadmin role — full database privilege escalation",
+        "technique": "Valid Accounts"
+      },
+      {
+        "name": "UAC Bypass via Windows Firewall Snap-In Hijack",
+        "dql": "stream=ep-process where eid='1' and parentimage like '%mmc.exe' and parentcommandline like '%WF.msc%' and not image like '%WerFault.exe'",
+        "stream": "EP-PROCESS",
+        "description": "UAC bypass using Windows Firewall MMC snap-in",
+        "technique": "Abuse Elevation Control Mechanism"
+      },
+      {
+        "name": "Meterpreter or Cobalt Strike Getsystem",
+        "dql": "stream=ep-process where action='PROCESS_ADDED' and rlike(lower(commandline), '(cmd.exe|compsec.*echo.*pipe|rundll32.*a%p:|mpcmdrun)') and parentimage like '%services.exe%' and eid='1' | groupby system, user",
+        "stream": "EP-PROCESS",
+        "description": "Getsystem technique indicators — Meterpreter or Cobalt Strike privilege escalation",
+        "technique": "Access Token Manipulation"
+      },
+      {
+        "name": "PowerShell on Compromised Host",
+        "dql": "stream=ep-image-load where action='PROCESS_ACCESSED' and status='PASSED' and description like '%system%management%automation%' and imageloaded like '%system%management%automation%' | groupby system",
+        "stream": "EP-IMAGE-LOAD",
+        "description": "PowerShell loaded on a flagged host — attacker tooling post-compromise",
+        "technique": "Scheduled Task/Job"
+      },
+      {
+        "name": "VBA DLL Loaded by Office Application",
+        "dql": "stream=ep-image-load where action='PROCESS_ACCESSED' and eid='7' and (image like '%excel.exe%' or image like '%winword.exe%' or image like '%powerpnt.exe%' or image like '%outlook.exe%') and imageloaded like '%taskschd.dll%' | groupby system",
+        "stream": "EP-IMAGE-LOAD",
+        "description": "Office application loading task scheduler DLL — macro-based privilege escalation",
+        "technique": "Scheduled Task/Job"
+      }
+    ]
+  },
+
+  "Lateral Movement": {
+    "description": "Attacker moving through the network — SMB, RDP, PsExec, USB propagation",
+    "mitre_tactic": "Lateral Movement",
+    "default_duration": "3d",
+    "queries": [
+      {
+        "name": "SMB Traffic Permitted From Compromised Host",
+        "dql": "stream=FIREWALL where action='PACKET_ALLOWED' and dstport=445 | groupby srcip",
+        "stream": "FIREWALL",
+        "description": "SMB traffic from internal hosts — lateral movement over file shares",
+        "technique": "Remote Services"
+      },
+      {
+        "name": "Excessive Denied SMB Traffic",
+        "dql": "stream=firewall where action='PACKET_BLOCKED' and dstport=445 | select srcip, count(*) as srccnt | groupby srcip",
+        "stream": "FIREWALL",
+        "description": "High volume of blocked SMB — scanning or failed lateral movement",
+        "technique": "Remote Services"
+      },
+      {
+        "name": "Suspicious PsExec Execution",
+        "dql": "stream=NTA-SMB where action in ('SMB_FILE_OPEN', 'SMB_FILE_DELETE') and path like '%C$%' and (name like '%stdin%' or name like '%stdout%' or name like '%stderr%') and not name like '%C$%' and not path like '%PSEXESVC%' | groupby srcip, dstip",
+        "stream": "NTA-SMB",
+        "description": "PsExec indicators on SMB — remote execution tool used for lateral movement",
+        "technique": "Remote Services"
+      },
+      {
+        "name": "External USB Storage Device Detected",
+        "dql": "stream=win-audit where action='EXTERNAL_DEVICE_PLUGGED' and status='PASSED' and eid='6416' and @ClassName='DiskDrive' | groupby user, system",
+        "stream": "WIN-AUDIT",
+        "description": "USB drive plugged in — possible removable media-based propagation",
+        "technique": "Replication Through Removable Media"
+      },
+      {
+        "name": "Suspicious Outbound RDP Connections",
+        "dql": "stream=ep-network where dstport='3389' and not (image like '%mstsc%exe%' or image like '%RTSApp%exe%' or image like '%RDCMan%exe%') | groupby user, system, dstip | limit 20",
+        "stream": "EP-NETWORK",
+        "description": "Outbound RDP from non-standard tools — possible automated lateral movement",
+        "technique": "Remote Services"
+      }
+    ]
+  },
+
+  "Exfiltration": {
+    "description": "Data leaving the environment — large transfers, cloud uploads, SMB to public IPs",
+    "mitre_tactic": "Exfiltration",
+    "default_duration": "3d",
+    "queries": [
+      {
+        "name": "File Accessed or Downloaded From Restricted Regions",
+        "dql": "stream=documents where action in ('ACCESSED', 'DOWNLOADED') and srccn in ('CN', 'KP', 'RU', 'IR') | groupby user",
+        "stream": "DOCUMENTS",
+        "description": "File access from high-risk countries — possible data theft",
+        "technique": "Exfiltration Over Web Service"
+      },
+      {
+        "name": "File Uploaded With Public Access",
+        "dql": "stream=documents where action='UPLOADED' and status='PASSED' and visibility='PUBLIC' | groupby user",
+        "stream": "DOCUMENTS",
+        "description": "Files shared publicly — unintentional or intentional data exposure",
+        "technique": "Exfiltration Over Web Service"
+      },
+      {
+        "name": "WebDAV PUT Request",
+        "dql": "stream=NTA-HTTP where uri like '%WebDAV%' and method like '%PUT%' and srctype='PUBLIC' | groupby srcip",
+        "stream": "NTA-HTTP",
+        "description": "Outbound WebDAV upload — file exfiltration over HTTP",
+        "technique": "Exfiltration Over Alternative Protocol"
+      },
+      {
+        "name": "Large Outbound Transfer High Rate",
+        "dql": "stream=FIREWALL where srctype='PRIVATE' and dsttype='PUBLIC' and txlen > 200000 | duration 15m | select srcip, count(*) as cnt | groupby srcip | having cnt > 10",
+        "stream": "FIREWALL",
+        "description": "High-volume outbound data — possible bulk exfiltration",
+        "technique": "Data Transfer Size Limits"
+      },
+      {
+        "name": "External SMB Communication Detected",
+        "dql": "stream=NTA-SMB where srctype='PUBLIC' or dsttype='PUBLIC' | groupby dstip, srcip",
+        "stream": "NTA-SMB",
+        "description": "SMB traffic to/from public IPs — unusual, possible data exfiltration",
+        "technique": "Exfiltration Over Alternative Protocol"
+      }
+    ]
+  },
+
+  "Execution": {
+    "description": "Malicious code execution — command shells, scripts, email-borne executables",
+    "mitre_tactic": "Execution",
+    "default_duration": "3d",
+    "queries": [
+      {
+        "name": "MSSQL xp_cmdshell Command Execution",
+        "dql": "stream=database where sourcename='MSSQL' and eid='33205' and querytype='EXECUTE' and lower(query) like '%xp_cmdshell%' | groupby system",
+        "stream": "DATABASE",
+        "description": "xp_cmdshell used — OS command execution from inside SQL Server",
+        "technique": "Command and Scripting Interpreter"
+      },
+      {
+        "name": "MSSQL xp_cmdshell Configuration Change",
+        "dql": "stream=configuration where sourcename='MSSQL' and eid='15457' and logevent like '%xp_cmdshell%' | groupby system",
+        "stream": "CONFIGURATION",
+        "description": "xp_cmdshell enabled or disabled — attacker enabling shell access",
+        "technique": "Command and Scripting Interpreter"
+      },
+      {
+        "name": "DNS RCE CVE-2020-1350 (SIGRed)",
+        "dql": "stream=DNS where RecordType in ('SIG', '0x18') and len(Query) > 50000 and status='FAILED' | groupby srcip",
+        "stream": "DNS",
+        "description": "SIGRed exploitation attempt — DNS remote code execution",
+        "technique": "System Services"
+      },
+      {
+        "name": "Email Attachment with Executable",
+        "dql": "stream=email-gateway where action='EMAIL_ACCEPTED' and rlike(file, '\\.(apk|bat|bin|exe|jar|js|msi|py|scr|sh|vbs|wsf)') | groupby sender",
+        "stream": "EMAIL-GATEWAY",
+        "description": "Executable file delivered via email — phishing / malware delivery",
+        "technique": "User Execution"
+      },
+      {
+        "name": "Executable Hidden in Double File Extension",
+        "dql": "stream=email-gateway where action='EMAIL_ACCEPTED' and rlike(file, '\\.(apk|bat|bin|exe|jar|js|msi|py|scr|sh|vbs|wsf)\\.') | groupby sender",
+        "stream": "EMAIL-GATEWAY",
+        "description": "Double extension trick (e.g. invoice.pdf.exe) — disguised malware delivery",
+        "technique": "User Execution"
+      }
+    ]
+  },
+
+  "Command and Control": {
+    "description": "Attacker C2 communication — DNS beaconing, tunneling, known malware domains",
+    "mitre_tactic": "Command and Control",
+    "default_duration": "3d",
+    "queries": [
+      {
+        "name": "Telegram Bot API DNS Request",
+        "dql": "stream=DNS where query like '%api.telegram.org/bot%' | groupby srcip",
+        "stream": "DNS",
+        "description": "Telegram Bot API used as C2 channel",
+        "technique": "Web Service"
+      },
+      {
+        "name": "WannaCry Killswitch Domain",
+        "dql": "stream=DNS where query in ('ifferfsodp9ifjaposdfjhgosurijfaewrwergwea.com', 'iuqssfsodp9ifjaposdfjhgosurijfaewrwergwea.com', 'ayylmaotjhsstasdfasdfasdfasdfasdfasdfasdf.com') | groupby srcip",
+        "stream": "DNS",
+        "description": "WannaCry ransomware killswitch domain lookup — active infection indicator",
+        "technique": "Application Layer Protocol"
+      },
+      {
+        "name": "Suspicious Base64 Encoded DNS Query",
+        "dql": "stream=DNS where rlike(query, '[A-Za-z0-9\\+\\/]+={1,2}\\.') | groupby srcip",
+        "stream": "DNS",
+        "description": "Base64 in DNS query — DNS tunneling or data exfiltration over DNS",
+        "technique": "Application Layer Protocol"
+      },
+      {
+        "name": "Cobalt Strike DNS Beaconing",
+        "dql": "stream=DNS where (query like 'aaa.stage.%' or query like 'post.1%') | groupby srcip",
+        "stream": "DNS",
+        "description": "Cobalt Strike DNS beacon patterns — active C2 communication",
+        "technique": "Application Layer Protocol"
+      },
+      {
+        "name": "Communication to Ngrok Tunneling Service",
+        "dql": "stream=ep-network where action='NETWORK_CONNECTION' and rlike(lower(dsthost), 'tunnel\\.(us|eu|ap|au|sa|jp|in)\\.ngrok\\.com') | groupby user, system, dsthost",
+        "stream": "EP-NETWORK",
+        "description": "Ngrok tunnel used — attacker routing C2 traffic through legitimate tunnel",
+        "technique": "Proxy"
+      }
+    ]
+  },
+
+  "Initial Access": {
+    "description": "Entry points — exposed RDP, web exploits, phishing, supply chain",
+    "mitre_tactic": "Initial Access",
+    "default_duration": "3d",
+    "queries": [
+      {
+        "name": "Publicly Accessible RDP Service",
+        "dql": "stream=NTA-RDP where action='CONNECTION_ESTABLISHED' and srctype='PUBLIC' | groupby dstip, srcip",
+        "stream": "NTA-RDP",
+        "description": "RDP connection established from public internet — exposed remote access",
+        "technique": "External Remote Services"
+      },
+      {
+        "name": "Multiple Suspicious HTTP Response Codes from Single Client",
+        "dql": "stream=webserver where returncode in ('400', '401', '403', '500') | groupby system, srcip | select system, srcip, count(*) as agg | having agg > 10",
+        "stream": "WEBSERVER",
+        "description": "Scanner or attacker probing web application — error code spike from one source",
+        "technique": "Exploit Public-Facing Application"
+      },
+      {
+        "name": "Twig Sort Filter Exploitation Attempt",
+        "dql": "stream=webserver where uriquery rlike '\\|sort\\((\\'|\")?(eval|system|exec|passthru|shell_exec|popen|proc_open)' | groupby srcip",
+        "stream": "WEBSERVER",
+        "description": "Twig template injection via sort filter — server-side template injection attack",
+        "technique": "Exploit Public-Facing Application"
+      },
+      {
+        "name": "Citrix ADS Exploitation (CVE-2020-8193/8195)",
+        "dql": "stream=webserver where (url like '%/rapi/filedownload_filter=path:%2F%') | groupby system",
+        "stream": "WEBSERVER",
+        "description": "Citrix ADC exploitation attempt — path traversal via known CVE",
+        "technique": "Exploit Public-Facing Application"
+      },
+      {
+        "name": "SolarWinds C2 Host Name Detected",
+        "dql": "stream=WEBFILTER where (url like '%avsvmcloud%com%' or url like '%databasegalore%com%' or url like '%deftsecurity%com%' or url like '%panhardware%com%' or url like '%thedoccloud%com%') | groupby srcip",
+        "stream": "WEBFILTER",
+        "description": "Known SolarWinds SUNBURST C2 domains — supply chain compromise indicator",
+        "technique": "Supply Chain Compromise"
+      }
+    ]
+  },
+
+  "Defense Evasion": {
+    "description": "Attackers hiding activity — log tampering, MFA disable, masquerading",
+    "mitre_tactic": "Defense Evasion",
+    "default_duration": "3d",
+    "queries": [
+      {
+        "name": "Audit Log Tampering in MSSQL",
+        "dql": "stream=database where sourcename='MSSQL' and eid='33205' and querytype in ('ALTER', 'DROP') and lower(query) like '%server audit%' | groupby system",
+        "stream": "DATABASE",
+        "description": "ALTER or DROP on MSSQL audit objects — attacker covering tracks",
+        "technique": "Impair Defenses"
+      },
+      {
+        "name": "MFA Disabled for GCP User",
+        "dql": "stream=iam where sourcename='G-SUITE' and action='UNENROLL_USER_FROM_STRONG_AUTH' | groupby user, targetuser",
+        "stream": "IAM",
+        "description": "MFA unenrolled — attacker weakening authentication controls",
+        "technique": "Modify Authentication Process"
+      },
+      {
+        "name": "Suspicious Kernel Feature Activity on Linux",
+        "dql": "stream=auditd where action='PROCESS_EXECUTED' and rlike(lower(commandline), '(/etc/sysctl.conf|/proc/sys/kernel/|/proc/sys/vm/|grsecurity)') | groupby user, system",
+        "stream": "AUDITD",
+        "description": "Kernel parameter tampering on Linux — disabling security features",
+        "technique": "Impair Defenses"
+      },
+      {
+        "name": "Bitsadmin to Uncommon TLD",
+        "dql": "stream=webfilter where (useragent like '%Microsoft BITS/%') and not (domain like '%.com' or domain like '%.net' or domain like '%.org' or domain like '%.edu' or domain like '%.gov') | groupby srcip",
+        "stream": "WEBFILTER",
+        "description": "BITS job downloading from unusual domain — LOLBin abuse for stealthy download",
+        "technique": "BITS Jobs"
+      },
+      {
+        "name": "Flash Player Update from Suspicious Location",
+        "dql": "stream=webfilter where (url like '%/install_flash_player.exe' or url like '%/flash_install.php%') and not (domain like '%.adobe.com/%') | groupby srcip",
+        "stream": "WEBFILTER",
+        "description": "Fake Flash update from non-Adobe domain — masquerading as legitimate software",
+        "technique": "Masquerading"
+      }
+    ]
+  },
+
+  "Impact": {
+    "description": "Destructive actions — data destruction, ransomware, DoS, crypto mining",
+    "mitre_tactic": "Impact",
+    "default_duration": "3d",
+    "queries": [
+      {
+        "name": "DROP or ALTER on MSSQL Database",
+        "dql": "stream=database where sourcename='MSSQL' and eid='33205' and rlike(lower(query), '(drop|truncate) (table|database)') | groupby system",
+        "stream": "DATABASE",
+        "description": "Destructive database commands — data destruction or sabotage",
+        "technique": "Data Destruction"
+      },
+      {
+        "name": "DNS NXDOMAIN Flood",
+        "dql": "stream=DNS where action='DNS_QUERIED' and responsecode='NXDOMAIN' and status='FAILED' | groupby srcip | select srcip, count(*) as count | having count > 500",
+        "stream": "DNS",
+        "description": "High-volume NXDOMAIN responses — DNS amplification or DoS attack",
+        "technique": "Network Denial of Service"
+      },
+      {
+        "name": "High DNS Requests From Same Source",
+        "dql": "stream=DNS where action='REQUEST_ALLOWED' and status='PASSED' | groupby srcip | select srcip, count(action) as totalcount | having totalcount > 10000",
+        "stream": "DNS",
+        "description": "Single source generating massive DNS traffic — DoS or DNS tunneling",
+        "technique": "Network Denial of Service"
+      },
+      {
+        "name": "In-Browser Crypto Mining",
+        "dql": "stream=EP-NETWORK where (image like '%iexplore%exe' or image like '%chrome%exe%' or image like '%firefox%exe%') and dstport in ('3333', '4444', '5555', '7777', '9999', '14444') | groupby user",
+        "stream": "EP-NETWORK",
+        "description": "Browser connecting to mining pool ports — cryptojacking",
+        "technique": "Resource Hijacking"
+      },
+      {
+        "name": "Ransomware Decryption Instructions Created",
+        "dql": "stream=ep-file where action='FILE_CREATED' and rlike(lower(targetfilename), '(decrypt|readme|recover|restore|how_to|unlock|ransom|contact).*?\\.(txt|html|hta|bmp|png|lnk)') | groupby system, user",
+        "stream": "EP-FILE",
+        "description": "Ransom note files created — active ransomware encryption in progress",
+        "technique": "Data Encrypted for Impact"
+      }
+    ]
+  },
+
+  "Persistence": {
+    "description": "Mechanisms for maintaining access — scheduled tasks, account manipulation, backdoors",
+    "mitre_tactic": "Persistence",
+    "default_duration": "3d",
+    "queries": [
+      {
+        "name": "Stored Procedure Set to Auto-Execute on SQL Startup",
+        "dql": "stream=database where sourcename='MSSQL' and eid='33205' and querytype='EXECUTE' and query like '%sp_procoption%' | groupby system",
+        "stream": "DATABASE",
+        "description": "SQL Server startup procedure configured — backdoor or persistence in database",
+        "technique": "Event Triggered Execution"
+      },
+      {
+        "name": "Mailbox Permission Added and Removed Quickly",
+        "dql": "stream=iam where action in ('MAILBOX_PERMISSION_ADDED', 'MAILBOX_PERMISSION_REMOVED') | duration 30m | select user, distinct_count(action) as cnt_action | groupby user | having cnt_action==2",
+        "stream": "IAM",
+        "description": "Mailbox permission rapidly added then removed — covert access then cleanup",
+        "technique": "Account Manipulation"
+      },
+      {
+        "name": "Same User Enabled and Disabled in Short Time",
+        "dql": "stream=IAM where (action='USER_DISABLED' or action='USER_ENABLED') | duration 30m | select user, targetuser, distinct_count(action) as countaction | groupby user, targetuser | having countaction==2",
+        "stream": "IAM",
+        "description": "Account enabled then disabled quickly — temporary account for persistence",
+        "technique": "Account Manipulation"
+      },
+      {
+        "name": "Remote Task Creation via ATSVC Named Pipe",
+        "dql": "stream=NTA-SMB where path like '%C$%' and name like '%ATSVC%' | groupby name",
+        "stream": "NTA-SMB",
+        "description": "Remote scheduled task creation over SMB — lateral persistence",
+        "technique": "Scheduled Task/Job"
+      },
+      {
+        "name": "Pulse Secure Arbitrary File Reading (CVE-2019-11510)",
+        "dql": "stream=threat where action='THREAT_DETECTED' and vector='HOST' and (url like '%dana%guacamole%' or url like '%lmdb%data.mdb%' or url like '%data%mtmp%system%') | groupby srcip, system",
+        "stream": "THREAT",
+        "description": "Pulse Secure VPN exploit attempt — file reading vulnerability used to maintain access",
+        "technique": "External Remote Services"
+      }
+    ]
+  }
+}

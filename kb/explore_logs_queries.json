@@ -1,0 +1,199 @@
+{
+  "Failed Logins": {
+    "description": "Authentication failures — failed login attempts by user, IP, or source",
+    "default_duration": "1d",
+    "streams": ["AUTHENTICATION"],
+    "queries": [
+      {
+        "label": "All failed logins in last 24h",
+        "dql": "stream=authentication where status='FAILED' | duration 1d | groupby user, srcip | limit 20",
+        "description": "Top users and IPs with failed login attempts"
+      },
+      {
+        "label": "Failed logins from public IPs",
+        "dql": "stream=authentication where status='FAILED' and srctype='PUBLIC' | duration 1d | groupby srcip, user | limit 20",
+        "description": "External IPs attempting to authenticate"
+      },
+      {
+        "label": "Brute force — users with > 5 failures",
+        "dql": "stream=authentication where status='FAILED' | duration 1d | groupby user, srcip | select user, srcip, count(*) as cnt | having cnt > 5 | limit 20",
+        "description": "Users or IPs with repeated failed attempts — possible brute force"
+      },
+      {
+        "label": "Failed logins by reason",
+        "dql": "stream=authentication where status='FAILED' | duration 1d | groupby reason, user | limit 20",
+        "description": "Breakdown by failure reason (BAD_USER_PASSWORD, USER_DISABLED, etc.)"
+      },
+      {
+        "label": "Failed logins for disabled accounts",
+        "dql": "stream=authentication where status='FAILED' and reason='USER_DISABLED' | duration 1d | groupby user, srcip | limit 20",
+        "description": "Login attempts on disabled accounts — possible credential stuffing"
+      }
+    ]
+  },
+
+  "Privilege Changes": {
+    "description": "IAM events — role grants, admin assignments, user enable/disable",
+    "default_duration": "1d",
+    "streams": ["IAM"],
+    "queries": [
+      {
+        "label": "All privilege changes in last 24h",
+        "dql": "stream=iam where action='PRIVILEGE_CHANGED' | duration 1d | groupby user, targetuser | limit 20",
+        "description": "Users whose privileges were changed"
+      },
+      {
+        "label": "New users created",
+        "dql": "stream=iam where action='USER_CREATED' | duration 1d | groupby user, targetuser | limit 20",
+        "description": "Accounts created in the last 24h"
+      },
+      {
+        "label": "Users deleted or deactivated",
+        "dql": "stream=iam where action in ('USER_DELETED', 'USER_DEACTIVATED', 'USER_SUSPENDED') | duration 1d | groupby user, targetuser | limit 20",
+        "description": "Accounts removed or suspended"
+      },
+      {
+        "label": "Role additions and removals",
+        "dql": "stream=iam where action in ('ROLE_ADDED', 'ROLE_REMOVED', 'ROLE_UPDATED') | duration 1d | groupby user, targetuser | limit 20",
+        "description": "Role assignment changes"
+      },
+      {
+        "label": "API token created or revoked",
+        "dql": "stream=iam where action in ('API_TOKEN_CREATED', 'API_TOKEN_REVOKED') | duration 1d | groupby user | limit 20",
+        "description": "API credential lifecycle events"
+      }
+    ]
+  },
+
+  "Destructive Operations": {
+    "description": "Database commands, file deletions, and endpoint file system destruction",
+    "default_duration": "1d",
+    "streams": ["DATABASE", "EP-FILE", "AUDITD"],
+    "queries": [
+      {
+        "label": "DROP or TRUNCATE commands on databases",
+        "dql": "stream=database where action='QUERY-EXECUTED' and rlike(lower(query), '(drop (table|database|view)|truncate table)') | duration 1d | groupby user, srcip | limit 20",
+        "description": "Destructive database commands executed"
+      },
+      {
+        "label": "Bulk file deletions on endpoints",
+        "dql": "stream=ep-file where action='FILE_DELETED' | duration 1d | groupby user, system | select user, system, count(*) as cnt | having cnt > 20 | limit 20",
+        "description": "Users or systems with unusually high file deletion counts"
+      },
+      {
+        "label": "System files modified on Linux",
+        "dql": "stream=auditd where action='FILE_MODIFIED' and rlike(targetfilename, '(/etc/|/usr/bin/|/bin/|/sbin/)') | duration 1d | groupby user, system | limit 20",
+        "description": "Critical system path modifications on Linux hosts"
+      },
+      {
+        "label": "Registry deletions on Windows",
+        "dql": "stream=ep-registry where action='REGISTRY_KEY_DELETED' | duration 1d | groupby user, system | limit 20",
+        "description": "Registry keys deleted — possible evidence tampering or persistence cleanup"
+      },
+      {
+        "label": "Service stops or process terminations",
+        "dql": "stream=ep-service where action='SERVICE_STOPPED' | duration 1d | groupby user, system, targetservice | limit 20",
+        "description": "Services stopped — possible defense disruption"
+      }
+    ]
+  },
+
+  "Network Connections": {
+    "description": "Firewall and network traffic — allowed/blocked connections, outbound activity",
+    "default_duration": "1d",
+    "streams": ["FIREWALL", "NTA-CONNECTION"],
+    "queries": [
+      {
+        "label": "All outbound connections to public IPs",
+        "dql": "stream=firewall where action='PACKET_ALLOWED' and dsttype='PUBLIC' | duration 1d | groupby srcip, dstip | limit 20",
+        "description": "Internal hosts connecting to the internet"
+      },
+      {
+        "label": "Blocked connections — top sources",
+        "dql": "stream=firewall where action='PACKET_BLOCKED' | duration 1d | groupby srcip | select srcip, count(*) as cnt | having cnt > 50 | limit 20",
+        "description": "Hosts generating high volumes of blocked traffic"
+      },
+      {
+        "label": "Connections on uncommon ports",
+        "dql": "stream=firewall where action='PACKET_ALLOWED' and dstport not in ('80', '443', '22', '25', '53', '3389') | duration 1d | groupby srcip, dstport | limit 20",
+        "description": "Traffic on non-standard ports"
+      },
+      {
+        "label": "Large outbound data transfers",
+        "dql": "stream=firewall where srctype='PRIVATE' and dsttype='PUBLIC' and txlen > 200000 | duration 1d | groupby srcip | select srcip, count(*) as cnt | having cnt > 10 | limit 20",
+        "description": "Hosts sending large volumes of data outbound — possible exfiltration"
+      },
+      {
+        "label": "Network connections by NTA",
+        "dql": "stream=NTA-CONNECTION where srctype='PUBLIC' | duration 1d | groupby srcip, dstip, dstport | limit 20",
+        "description": "Inbound public connections captured by network traffic analysis"
+      }
+    ]
+  },
+
+  "Endpoint Activity": {
+    "description": "Process execution, file writes, and registry changes on endpoints",
+    "default_duration": "1d",
+    "streams": ["EP-PROCESS", "EP-FILE", "EP-REGISTRY"],
+    "queries": [
+      {
+        "label": "Processes executed in last 24h",
+        "dql": "stream=ep-process where action='PROCESS_ADDED' | duration 1d | groupby image, user, system | limit 20",
+        "description": "All process execution events on endpoints"
+      },
+      {
+        "label": "PowerShell executions",
+        "dql": "stream=ep-process where action='PROCESS_ADDED' and image like '%powershell%' | duration 1d | groupby user, system, commandline | limit 20",
+        "description": "PowerShell process launches — common attacker tool"
+      },
+      {
+        "label": "Executables written to disk",
+        "dql": "stream=ep-file where action='FILE_CREATED' and rlike(lower(targetfilename), '\\.(exe|dll|bat|ps1|vbs|sh)$') | duration 1d | groupby user, system, targetfilename | limit 20",
+        "description": "Executable files written to endpoints"
+      },
+      {
+        "label": "Registry run key modifications",
+        "dql": "stream=ep-registry where rlike(lower(targetobject), '(run|runonce|startup)') | duration 1d | groupby user, system, targetobject | limit 20",
+        "description": "Persistence mechanism — run key changes"
+      },
+      {
+        "label": "Child processes spawned by Office apps",
+        "dql": "stream=ep-process where action='PROCESS_ADDED' and rlike(lower(parentimage), '(winword|excel|powerpnt|outlook)\\.exe') | duration 1d | groupby image, parentimage, system | limit 20",
+        "description": "Office apps spawning child processes — phishing / macro execution"
+      }
+    ]
+  },
+
+  "Data Access": {
+    "description": "File and document access, downloads, and uploads from collaboration or storage systems",
+    "default_duration": "1d",
+    "streams": ["DOCUMENTS", "DATABASE"],
+    "queries": [
+      {
+        "label": "Files downloaded in last 24h",
+        "dql": "stream=documents where action='DOWNLOADED' | duration 1d | groupby user | select user, count(*) as cnt | having cnt > 10 | limit 20",
+        "description": "Users downloading large numbers of files"
+      },
+      {
+        "label": "Files uploaded with public access",
+        "dql": "stream=documents where action='UPLOADED' and visibility='PUBLIC' | duration 1d | groupby user | limit 20",
+        "description": "Files shared publicly — possible data exposure"
+      },
+      {
+        "label": "Files accessed from unusual locations",
+        "dql": "stream=documents where action in ('ACCESSED', 'DOWNLOADED') and srccn in ('CN', 'KP', 'RU', 'IR') | duration 1d | groupby user, srccn | limit 20",
+        "description": "File access from high-risk countries"
+      },
+      {
+        "label": "Database queries with large result sets",
+        "dql": "stream=database where action='QUERY-EXECUTED' and rowcount > 1000 | duration 1d | groupby user, srcip | limit 20",
+        "description": "Bulk data reads from databases"
+      },
+      {
+        "label": "Sensitive file path access on endpoints",
+        "dql": "stream=ep-file where action='FILE_ACCESSED' and rlike(lower(targetfilename), '(password|credential|secret|private_key|id_rsa|.aws/credentials)') | duration 1d | groupby user, system, targetfilename | limit 20",
+        "description": "Access to credential or key files on endpoints"
+      }
+    ]
+  }
+}
